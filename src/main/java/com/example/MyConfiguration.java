@@ -5,7 +5,6 @@ import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameter;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
@@ -14,7 +13,6 @@ import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.integration.launch.JobLaunchRequest;
 import org.springframework.batch.integration.launch.JobLaunchingGateway;
-import org.springframework.batch.integration.launch.JobLaunchingMessageHandler;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -25,12 +23,10 @@ import org.springframework.integration.core.MessageSource;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
 import org.springframework.integration.dsl.core.Pollers;
-import org.springframework.integration.dsl.support.Transformers;
 import org.springframework.integration.endpoint.MethodInvokingMessageSource;
 import org.springframework.integration.handler.LoggingHandler;
 
 import java.util.Collections;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 
@@ -99,14 +95,17 @@ public class MyConfiguration {
 
     @Bean
     public IntegrationFlow myFlow() {
+        System.out.println(jobRepository);
+
         return IntegrationFlows.from(this.integerMessageSource(),
                 c -> c.poller(Pollers.fixedRate(10000)))
-                .<Long, JobLaunchRequest>transform(message -> new JobLaunchRequest(new SimpleJob("exampleJob"),
+                .<Long, JobLaunchRequest>transform(message -> new
+                        JobLaunchRequest(
+                        new SimpleJob("exampleJob"),
                         new JobParameters(Collections.singletonMap("key", new JobParameter(message)))))
                 .handle(jobLaunchingGateway)
                 //.handle(logger())
                 .get();
-
 
     }
 

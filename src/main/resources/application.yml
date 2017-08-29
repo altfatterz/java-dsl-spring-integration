@@ -1,4 +1,14 @@
 spring:
+
+  # input
+  datasource:
+    url: jdbc:postgresql://localhost:5432/falconpb
+    username:
+    password:
+    driver-class-name: org.postgresql.Driver
+
+
+  # disable job execution by default
   batch:
     job:
       enabled: false

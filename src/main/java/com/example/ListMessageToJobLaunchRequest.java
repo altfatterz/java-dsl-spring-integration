@@ -23,9 +23,10 @@ public class ListMessageToJobLaunchRequest {
     }
 
     @Transformer
-    public JobLaunchRequest toRequest(Message<List> message) {
+    public JobLaunchRequest toRequest(Message<List<ExternalBatchJob>> message) {
         JobParametersBuilder jobParametersBuilder = new JobParametersBuilder();
 
+        jobParametersBuilder.addString("end_date", message.getPayload().get(0).getEndDate().toString());
         jobParametersBuilder.addDate("dummy", new Date());
 
         return new JobLaunchRequest(job, jobParametersBuilder.toJobParameters());

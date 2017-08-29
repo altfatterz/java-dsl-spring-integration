@@ -27,9 +27,15 @@ import org.springframework.integration.file.FileReadingMessageSource.WatchEventT
 import org.springframework.integration.file.filters.SimplePatternFileListFilter;
 import org.springframework.integration.handler.LoggingHandler;
 import org.springframework.integration.jdbc.JdbcPollingChannelAdapter;
+import org.springframework.jdbc.core.RowMapper;
 
 import javax.sql.DataSource;
 import java.io.File;
+import java.sql.Date;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.ZoneId;
 
 
 // Java DSL described here
@@ -80,6 +86,9 @@ public class MyConfiguration {
         JdbcPollingChannelAdapter jdbcPollingChannelAdapter = new JdbcPollingChannelAdapter
                 (datasource, "select * from external_batch_job_execution where status = 'FINISHED'");
         jdbcPollingChannelAdapter.setUpdateSql("update external_batch_job_execution set status = 'PROCESSED' where status = 'FINISHED'");
+        jdbcPollingChannelAdapter.setRowMapper((RowMapper<ExternalBatchJob>) (rs, rowNum) ->
+                new ExternalBatchJob(rs.getDate("end_date"), rs.getString("status"))
+        );
         return jdbcPollingChannelAdapter;
     }
 
@@ -96,7 +105,7 @@ public class MyConfiguration {
     @Bean
     public IntegrationFlow myDatabaseTriggeredFlow() {
         return IntegrationFlows.from(jdbcPollingChannelAdapter,
-                c -> c.poller(Pollers.fixedRate(5000, 2000)))
+                c -> c.poller(Pollers.fixedRate(10000, 2000)))
                 .transform(listMessageToJobLaunchRequest())
                 .handle(jobLaunchingGateway)
                 .handle(logger())

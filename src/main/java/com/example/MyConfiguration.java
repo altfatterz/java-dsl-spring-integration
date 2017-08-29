@@ -11,6 +11,7 @@ import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.integration.launch.JobLaunchingGateway;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.mapping.PassThroughLineMapper;
+import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -25,7 +26,9 @@ import org.springframework.integration.file.FileReadingMessageSource;
 import org.springframework.integration.file.FileReadingMessageSource.WatchEventType;
 import org.springframework.integration.file.filters.SimplePatternFileListFilter;
 import org.springframework.integration.handler.LoggingHandler;
+import org.springframework.integration.jdbc.JdbcPollingChannelAdapter;
 
+import javax.sql.DataSource;
 import java.io.File;
 
 
@@ -59,6 +62,9 @@ public class MyConfiguration {
     @Autowired
     private JobLaunchingGateway jobLaunchingGateway;
 
+    @Autowired
+    private JdbcPollingChannelAdapter jdbcPollingChannelAdapter;
+
     @Bean
     public MessageSource<File> fileReadingMessageSource() {
         FileReadingMessageSource source = new FileReadingMessageSource();
@@ -70,7 +76,15 @@ public class MyConfiguration {
     }
 
     @Bean
-    public IntegrationFlow myFlow() {
+    public JdbcPollingChannelAdapter jdbcPollingChannelAdapter(DataSource datasource) {
+        JdbcPollingChannelAdapter jdbcPollingChannelAdapter = new JdbcPollingChannelAdapter
+                (datasource, "select * from external_batch_job_execution where status = 'FINISHED'");
+        jdbcPollingChannelAdapter.setUpdateSql("update external_batch_job_execution set status = 'PROCESSED' where status = 'FINISHED'");
+        return jdbcPollingChannelAdapter;
+    }
+
+    //@Bean
+    public IntegrationFlow myFileTriggeredFlow() {
         return IntegrationFlows.from(fileReadingMessageSource(),
                 c -> c.poller(Pollers.fixedRate(5000, 2000)))
                 .transform(fileMessageToJobLaunchRequest())
@@ -78,6 +92,25 @@ public class MyConfiguration {
                 .handle(logger())
                 .get();
     }
+
+    @Bean
+    public IntegrationFlow myDatabaseTriggeredFlow() {
+        return IntegrationFlows.from(jdbcPollingChannelAdapter,
+                c -> c.poller(Pollers.fixedRate(5000, 2000)))
+                .transform(listMessageToJobLaunchRequest())
+                .handle(jobLaunchingGateway)
+                .handle(logger())
+                .get();
+    }
+
+    @Bean
+    ListMessageToJobLaunchRequest listMessageToJobLaunchRequest() {
+        ListMessageToJobLaunchRequest transformer = new ListMessageToJobLaunchRequest();
+        transformer.setJob(dummyJob());
+        transformer.setParameterName("end_date");
+        return transformer;
+    }
+
 
     @Bean
     FileMessageToJobLaunchRequest fileMessageToJobLaunchRequest() {
@@ -98,6 +131,21 @@ public class MyConfiguration {
     }
 
     // ----------------------------------------------------------------------------------------- //
+
+    @Bean
+    Job dummyJob() {
+        return jobBuilderFactory.get("dummyJob")
+                .start(dummyStep())
+                .build();
+    }
+
+    @Bean
+    Step dummyStep() {
+        return stepBuilderFactory.get("dummyStep").tasklet((contribution, chunkContext) -> {
+            log.info("Dummy step executed");
+            return RepeatStatus.FINISHED;
+        }).build();
+    }
 
     @Bean
     Job exampleJob() {

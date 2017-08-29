@@ -32,14 +32,14 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-batch</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>com.h2database</groupId>
-			<artifactId>h2</artifactId>
-		</dependency>
 		<!--<dependency>-->
-			<!--<groupId>org.postgresql</groupId>-->
-			<!--<artifactId>postgresql</artifactId>-->
+			<!--<groupId>com.h2database</groupId>-->
+			<!--<artifactId>h2</artifactId>-->
 		<!--</dependency>-->
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.batch</groupId>
 			<artifactId>spring-batch-integration</artifactId>
@@ -54,7 +54,10 @@
 			<groupId>org.springframework.integration</groupId>
 			<artifactId>spring-integration-file</artifactId>
 		</dependency>
-
+		<dependency>
+			<groupId>org.springframework.integration</groupId>
+			<artifactId>spring-integration-jdbc</artifactId>
+		</dependency>
 
 
 		<dependency>

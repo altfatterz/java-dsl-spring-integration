@@ -2,42 +2,31 @@ package com.example;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
-import org.springframework.batch.core.JobParameter;
-import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepScope;
-import org.springframework.batch.core.job.SimpleJob;
 import org.springframework.batch.core.launch.JobLauncher;
-import org.springframework.batch.core.repository.JobRepository;
-import org.springframework.batch.integration.launch.JobLaunchRequest;
 import org.springframework.batch.integration.launch.JobLaunchingGateway;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.mapping.PassThroughLineMapper;
-import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
-import org.springframework.integration.annotation.IntegrationComponentScan;
-import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.config.EnableIntegration;
 import org.springframework.integration.core.MessageSource;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
 import org.springframework.integration.dsl.core.Pollers;
-import org.springframework.integration.endpoint.MethodInvokingMessageSource;
 import org.springframework.integration.file.FileReadingMessageSource;
 import org.springframework.integration.file.FileReadingMessageSource.WatchEventType;
 import org.springframework.integration.file.filters.SimplePatternFileListFilter;
 import org.springframework.integration.handler.LoggingHandler;
 
 import java.io.File;
-import java.util.Collections;
-import java.util.concurrent.atomic.AtomicLong;
 
 
 // Java DSL described here

@@ -8,6 +8,7 @@ import org.springframework.batch.core.configuration.annotation.JobBuilderFactory
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.integration.launch.JobLaunchingGateway;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.mapping.PassThroughLineMapper;
@@ -31,11 +32,6 @@ import org.springframework.jdbc.core.RowMapper;
 
 import javax.sql.DataSource;
 import java.io.File;
-import java.sql.Date;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.time.LocalDate;
-import java.time.ZoneId;
 
 
 // Java DSL described here
@@ -105,7 +101,7 @@ public class MyConfiguration {
     @Bean
     public IntegrationFlow myDatabaseTriggeredFlow() {
         return IntegrationFlows.from(jdbcPollingChannelAdapter,
-                c -> c.poller(Pollers.fixedRate(10000, 2000)))
+                c -> c.poller(Pollers.fixedRate(5000, 2000)))
                 .transform(listMessageToJobLaunchRequest())
                 .handle(jobLaunchingGateway)
                 .handle(logger())
@@ -116,7 +112,6 @@ public class MyConfiguration {
     ListMessageToJobLaunchRequest listMessageToJobLaunchRequest() {
         ListMessageToJobLaunchRequest transformer = new ListMessageToJobLaunchRequest();
         transformer.setJob(dummyJob());
-        transformer.setParameterName("end_date");
         return transformer;
     }
 
@@ -145,6 +140,7 @@ public class MyConfiguration {
     Job dummyJob() {
         return jobBuilderFactory.get("dummyJob")
                 .start(dummyStep())
+                .next(extractStep())
                 .build();
     }
 
@@ -154,6 +150,11 @@ public class MyConfiguration {
             log.info("Dummy step executed");
             return RepeatStatus.FINISHED;
         }).build();
+    }
+
+    @Bean
+    Step extractStep() {
+        return stepBuilderFactory.get("extractStep").tasklet(myTasklet()).build();
     }
 
     @Bean
@@ -173,6 +174,15 @@ public class MyConfiguration {
     }
 
     @Bean
+    Tasklet myTasklet() {
+        return (contribution, chunkContext) -> {
+            Object endDate = chunkContext.getStepContext().getJobParameters().get("end_date");
+            log.info("Tasklet received date: {}", endDate);
+            return RepeatStatus.FINISHED;
+        };
+    }
+
+    @Bean
     @StepScope
     FlatFileItemReader<String> itemReader(@Value("#{jobParameters[file_path]}") String filePath) {
         FlatFileItemReader<String> reader = new FlatFileItemReader<>();
@@ -181,6 +191,5 @@ public class MyConfiguration {
         reader.setLineMapper(new PassThroughLineMapper());
         return reader;
     }
-
 
 }
